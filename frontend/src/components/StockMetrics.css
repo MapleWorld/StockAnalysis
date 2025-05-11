@@ -1,0 +1,114 @@
+.stock-metrics {
+  margin: 20px 0;
+  padding: 20px;
+  background: #282c34;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.metrics-section {
+  margin-bottom: 30px;
+}
+
+.metrics-section:last-child {
+  margin-bottom: 0;
+}
+
+.metrics-section h3 {
+  margin-bottom: 15px;
+  color: #fff;
+  font-size: 1.2em;
+  text-align: left;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.metric-item {
+  padding: 15px;
+  background: #1a1d24;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.metric-item .label {
+  display: block;
+  color: #a0a0a0;
+  font-size: 0.9em;
+  margin-bottom: 5px;
+}
+
+.metric-item .value {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: #fff;
+}
+
+.earnings-table {
+  overflow-x: auto;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+
+.earnings-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  min-width: 600px;
+}
+
+.earnings-table th,
+.earnings-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #3a3f4b;
+  color: #fff;
+}
+
+.earnings-table th {
+  background: #1a1d24;
+  font-weight: 500;
+  color: #a0a0a0;
+  white-space: nowrap;
+}
+
+.earnings-table td {
+  white-space: nowrap;
+}
+
+.earnings-table tr:hover {
+  background: #1a1d24;
+}
+
+.positive {
+  color: #4caf50;
+}
+
+.negative {
+  color: #f44336;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stock-metrics {
+    margin: 15px 0;
+    padding: 15px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .metric-item {
+    padding: 10px;
+  }
+
+  .earnings-table {
+    margin: 0 -15px;
+    padding: 0 15px;
+  }
+} 
