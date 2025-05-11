@@ -9,8 +9,7 @@ import {
   Title,
   Tooltip,
   Legend,
-  TimeScale,
-  BarElement
+  TimeScale
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { enUS } from 'date-fns/locale';
@@ -24,8 +23,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  TimeScale,
-  BarElement
+  TimeScale
 );
 
 const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
@@ -82,6 +80,7 @@ const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
         label: 'Stock Price',
         data: filteredData.map(item => ({
           x: item.timestamp,
+          y: item.price,
           o: item.open || item.price,
           h: item.high || item.price,
           l: item.low || item.price,
@@ -93,8 +92,7 @@ const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
         pointRadius: 0,
         pointHoverRadius: 0,
         fill: false,
-        tension: 0,
-        type: 'candlestick'
+        tension: 0
       }
     ]
   };
@@ -146,12 +144,12 @@ const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
             }
           },
           label: function(context) {
-            const data = context[0].raw;
+            const dataPoint = context.raw;
             return [
-              `Open: $${data.o.toFixed(2)}`,
-              `High: $${data.h.toFixed(2)}`,
-              `Low: $${data.l.toFixed(2)}`,
-              `Close: $${data.c.toFixed(2)}`
+              `Open: $${dataPoint.o.toFixed(2)}`,
+              `High: $${dataPoint.h.toFixed(2)}`,
+              `Low: $${dataPoint.l.toFixed(2)}`,
+              `Close: $${dataPoint.c.toFixed(2)}`
             ];
           }
         }
