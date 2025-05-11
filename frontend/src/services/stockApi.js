@@ -1,16 +1,16 @@
 import { cacheService } from './cacheService';
 import { rateLimiter } from './rateLimiter';
 
-const PRIMARY_API_KEY = 'MUEGFLIKNM1EK9QE';
-const SECONDARY_API_KEY = 'ZZSV0L0O83VB3YU7';
-const TERTIARY_API_KEY = 'HYALHCB1H1SYONAP';
-const QUARTERNARY_API_KEY = 'FMUZSKJXV6Y4DCP9';
-const QUINARY_API_KEY = 'YFLTUS975LJTHNA3';
-const BASE_URL = 'https://www.alphavantage.co/query';
+const API_KEYS = [
+  'MUEGFLIKNM1EK9QE',
+  'ZZSV0L0O83VB3YU7',
+  'HYALHCB1H1SYONAP',
+  'FMUZSKJXV6Y4DCP9',
+  'YFLTUS975LJTHNA3'
+];
 
-// Keep track of which API key to use next
+const BASE_URL = 'https://www.alphavantage.co/query';
 let currentApiKeyIndex = 0;
-const API_KEYS = [PRIMARY_API_KEY, SECONDARY_API_KEY, TERTIARY_API_KEY, QUARTERNARY_API_KEY, QUINARY_API_KEY];
 
 const getNextApiKey = () => {
   const key = API_KEYS[currentApiKeyIndex];
@@ -18,7 +18,8 @@ const getNextApiKey = () => {
   return key;
 };
 
-const fetchWithApiKey = async (params, apiKey) => {
+const fetchWithApiKey = async (params) => {
+  const apiKey = getNextApiKey();
   const response = await fetch(`${BASE_URL}?${params}&apikey=${apiKey}`);
   const data = await response.json();
   
@@ -40,13 +41,13 @@ const fetchWithApiKey = async (params, apiKey) => {
 
 const fetchWithRetry = async (params) => {
   try {
-    const apiKey = getNextApiKey();
-    console.log(`Using API key ${currentApiKeyIndex} of ${API_KEYS.length}`);
-    return await fetchWithApiKey(params, apiKey);
+    return await fetchWithApiKey(params);
   } catch (error) {
     if (error.message !== 'RATE_LIMIT') {
       throw error;
     }
+    // If we hit rate limit, try with next API key
+    return await fetchWithApiKey(params);
   }
 };
 
@@ -72,63 +73,69 @@ export const fetchAllStockData = async (symbol) => {
     // Check rate limit
     await rateLimiter.checkLimit();
 
-    // Single API call to get all data
-    const response = await fetchWithRetry(`function=GLOBAL_QUOTE&symbol=${symbol}`);
+    // Make separate API calls for different data types
+    const [overviewData, earningsData, timeSeriesData] = await Promise.all([
+      fetchWithRetry(`function=OVERVIEW&symbol=${symbol}`),
+      fetchWithRetry(`function=EARNINGS&symbol=${symbol}`),
+      fetchWithRetry(`function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact`)
+    ]);
 
-    // Debug logging
-    console.log('API Response:', response);
+    // Validate responses
+    if (!overviewData?.Name) throw new Error('No company overview data available');
+    if (!earningsData?.quarterlyEarnings) throw new Error('No earnings data available');
+    if (!timeSeriesData?.['Time Series (Daily)']) throw new Error('No historical data available');
 
-    if (!response || !response['Global Quote']) {
-      console.error('API Response Structure:', response);
-      if (response['Error Message']) {
-        throw new Error(response['Error Message']);
-      }
-      if (response['Note']) {
-        throw new Error(response['Note']);
-      }
-      throw new Error('No data available for this symbol');
-    }
+    const timeSeries = timeSeriesData['Time Series (Daily)'];
 
-    const quote = response['Global Quote'];
+    // Process historical data and get current price info
+    const processedHistoricalData = Object.entries(timeSeries)
+      .map(([date, values]) => ({
+        timestamp: new Date(date).getTime(),
+        price: parseFloat(values['4. close']),
+        volume: parseInt(values['6. volume'])
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
-    // Process the data
+    // Get current price info from the most recent data point
+    const currentData = processedHistoricalData[processedHistoricalData.length - 1];
+    const previousData = processedHistoricalData[processedHistoricalData.length - 2];
+    const priceChange = previousData ? currentData.price - previousData.price : 0;
+    const priceChangePercent = previousData ? (priceChange / previousData.price) * 100 : 0;
+
     const processedData = {
       symbol,
       quote: {
-        price: parseFloat(quote['05. price']) || 0,
-        change: parseFloat(quote['09. change']) || 0,
-        changePercent: parseFloat(quote['10. change percent']?.replace('%', '')) || 0,
-        volume: parseInt(quote['06. volume']) || 0
+        price: currentData.price,
+        change: priceChange,
+        changePercent: priceChangePercent,
+        volume: currentData.volume
       },
       overview: {
-        name: symbol,
-        description: 'No description available',
-        sector: 'N/A',
-        marketCap: 0,
-        dividendYield: 0,
-        dividendPerShare: 0,
-        payoutRatio: 0
+        name: overviewData.Name,
+        description: overviewData.Description || 'No description available',
+        sector: overviewData.Sector || 'N/A',
+        marketCap: parseFloat(overviewData.MarketCapitalization) || 0,
+        dividendYield: parseFloat(overviewData.DividendYield) || 0,
+        dividendPerShare: parseFloat(overviewData.DividendPerShare) || 0,
+        payoutRatio: parseFloat(overviewData.PayoutRatio) || 0
       },
       earnings: {
-        quarterly: [{
-          date: new Date().toISOString().split('T')[0],
-          reportedEPS: 0,
-          estimatedEPS: 0,
-          surprise: 0,
-          surprisePercentage: 0
-        }]
+        quarterly: earningsData.quarterlyEarnings.map(earning => ({
+          date: earning.fiscalDateEnding,
+          reportedEPS: parseFloat(earning.reportedEPS) || 0,
+          estimatedEPS: parseFloat(earning.estimatedEPS) || 0,
+          surprise: parseFloat(earning.surprise) || 0,
+          surprisePercentage: parseFloat(earning.surprisePercentage) || 0
+        }))
       },
       peData: {
-        currentPE: 0,
-        forwardPE: 0,
-        pegRatio: 0,
-        priceToBookRatio: 0,
-        priceToSalesRatio: 0
+        currentPE: parseFloat(overviewData.PERatio) || 0,
+        forwardPE: parseFloat(overviewData.ForwardPE) || 0,
+        pegRatio: parseFloat(overviewData.PEGRatio) || 0,
+        priceToBookRatio: parseFloat(overviewData.PriceToBookRatio) || 0,
+        priceToSalesRatio: parseFloat(overviewData.PriceToSalesRatio) || 0
       },
-      historicalData: [{
-        timestamp: new Date().getTime(),
-        price: parseFloat(quote['05. price']) || 0
-      }]
+      historicalData: processedHistoricalData
     };
 
     // Cache the processed data
@@ -142,11 +149,4 @@ export const fetchAllStockData = async (symbol) => {
     }
     throw new Error(`Failed to fetch stock data: ${error.message}`);
   }
-};
-
-// Helper function to calculate moving average
-const calculateMovingAverage = (data, period) => {
-  if (data.length < period) return 'N/A';
-  const prices = data.slice(-period).map(d => d.price);
-  return prices.reduce((a, b) => a + b, 0) / period;
 };
