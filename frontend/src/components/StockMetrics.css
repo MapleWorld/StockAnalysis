@@ -1,50 +1,97 @@
 .stock-metrics {
-  margin: 20px 0;
-  padding: 20px;
-  background: #282c34;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .metrics-section {
-  margin-bottom: 30px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(97, 218, 251, 0.1);
 }
 
-.metrics-section:last-child {
-  margin-bottom: 0;
+.metrics-section h2 {
+  color: #61dafb;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
-.metrics-section h3 {
-  margin-bottom: 15px;
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(97, 218, 251, 0.1);
+  transition: all 0.3s ease;
+}
+
+.overview-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(97, 218, 251, 0.1);
+  border-color: rgba(97, 218, 251, 0.2);
+}
+
+.overview-label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.overview-value {
   color: #fff;
-  font-size: 1.2em;
-  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .metric-item {
-  padding: 15px;
-  background: #1a1d24;
-  border-radius: 4px;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(97, 218, 251, 0.1);
+  transition: all 0.3s ease;
 }
 
-.metric-item .label {
-  display: block;
-  color: #a0a0a0;
-  font-size: 0.9em;
-  margin-bottom: 5px;
+.metric-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(97, 218, 251, 0.1);
+  border-color: rgba(97, 218, 251, 0.2);
 }
 
-.metric-item .value {
-  font-size: 1.1em;
-  font-weight: 500;
+.metric-label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.metric-value {
   color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.metric-description {
+  color: #666;
+  font-size: 0.8rem;
 }
 
 .earnings-table {
@@ -91,24 +138,81 @@
   color: #f44336;
 }
 
-/* Responsive adjustments */
+.earnings-chart-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  height: 400px;
+  border: 1px solid rgba(97, 218, 251, 0.1);
+}
+
+.earnings-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(97, 218, 251, 0.1);
+  transition: all 0.3s ease;
+}
+
+.summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(97, 218, 251, 0.1);
+  border-color: rgba(97, 218, 251, 0.2);
+}
+
+.summary-label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.summary-value {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.summary-description {
+  color: #666;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 768px) {
   .stock-metrics {
-    margin: 15px 0;
-    padding: 15px;
+    padding: 0.5rem;
   }
 
-  .metrics-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
+  .metrics-section {
+    padding: 1rem;
   }
 
-  .metric-item {
-    padding: 10px;
+  .metrics-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
   }
 
-  .earnings-table {
-    margin: 0 -15px;
-    padding: 0 15px;
+  .overview-grid,
+  .metrics-grid,
+  .earnings-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .earnings-chart-container {
+    height: 300px;
+  }
+
+  .overview-value,
+  .metric-value,
+  .summary-value {
+    font-size: 1rem;
   }
 } 

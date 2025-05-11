@@ -1,76 +1,35 @@
-.App {
+.app {
   text-align: center;
   min-height: 100vh;
   background-color: #1a1d24;
   color: #fff;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
+.app-header {
   background-color: #282c34;
   padding: 20px;
   color: white;
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
 }
 
-.App-header h1 {
-  margin: 0;
+.app-header h1 {
+  margin: 0 0 20px 0;
   font-size: 1.8em;
-}
-
-.App-link {
   color: #61dafb;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-h1 {
-  margin-bottom: 40px;
-  color: #61dafb;
-}
-
-p {
-  font-size: 1.2rem;
-  color: #ffffff;
-}
-
-/* Stock Search Styles */
-.stock-search {
-  margin-bottom: 30px;
-  width: 100%;
-  max-width: 500px;
-}
-
-.stock-search form {
+.search-form {
   display: flex;
   gap: 10px;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.stock-input {
+.search-input {
   flex: 1;
   padding: 12px;
   font-size: 16px;
@@ -95,44 +54,38 @@ p {
   background-color: #4fa8c7;
 }
 
-/* Stock Content Layout */
-.stock-content {
-  width: 100%;
+.search-button:disabled {
+  background-color: #4fa8c7;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #ff6b6b;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 20px auto;
+  max-width: 500px;
+  border: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+.dashboard {
   max-width: 1200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 30px;
-}
-
-.chart-section {
-  width: 100%;
-  max-width: 1000px;
   margin: 0 auto;
-}
-
-.info-section {
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-/* Stock Chart Styles */
-.stock-chart {
-  background-color: #1a1d24;
-  border-radius: 8px;
   padding: 20px;
-  width: 100%;
+  box-sizing: border-box;
 }
 
-.chart-controls {
+.time-interval-controls {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
-.time-range-btn {
+.time-interval-controls button {
   padding: 8px 16px;
   background-color: transparent;
   border: 1px solid #61dafb;
@@ -143,125 +96,74 @@ p {
   font-size: 0.9em;
 }
 
-.time-range-btn:hover {
+.time-interval-controls button:hover {
   background-color: rgba(97, 218, 251, 0.1);
 }
 
-.time-range-btn.active {
+.time-interval-controls button.active {
   background-color: #61dafb;
   color: #282c34;
 }
 
-.chart-container {
-  height: 400px;
-  width: 100%;
-}
-
-/* Stock Detail Styles */
-.stock-detail {
-  background-color: #1a1d24;
-  padding: 20px;
-  border-radius: 8px;
-  width: 100%;
-}
-
-.stock-detail h2 {
-  color: #61dafb;
-  margin-bottom: 20px;
-}
-
-.stock-info {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  text-align: left;
-  padding: 10px;
-}
-
-.info-item {
+.dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 10px;
-  background-color: rgba(97, 218, 251, 0.05);
-  border-radius: 4px;
-  transition: background-color 0.3s;
+  gap: 20px;
+  margin-top: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.info-item:hover {
-  background-color: rgba(97, 218, 251, 0.1);
-}
-
-.label {
-  color: #888;
-  font-size: 0.9em;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.value {
-  font-size: 1.2em;
-  font-weight: bold;
-  color: #fff;
-}
-
-.value.positive {
-  color: #4caf50;
-}
-
-.value.negative {
-  color: #f44336;
-}
-
-.loading {
-  text-align: center;
-  color: #fff;
-  margin: 20px 0;
-}
-
-.error-container {
+.chart-section {
   background-color: #282c34;
   border-radius: 8px;
   padding: 20px;
-  margin: 20px 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  height: 500px;
 }
 
-.error {
-  color: #ff6b6b;
-  margin: 0;
+.metrics-section {
+  background-color: #282c34;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  min-height: 500px;
+  overflow-y: auto;
 }
 
-.error-hint {
-  color: #a0a0a0;
-  font-size: 0.9em;
-  margin: 10px 0 0 0;
-}
-
-.chart-loading {
-  color: #61dafb;
-  text-align: center;
-  padding: 40px;
-  font-size: 1.1em;
-}
-
-.chart-error {
-  color: #f44336;
-  text-align: center;
-  padding: 40px;
-  font-size: 1.1em;
-  background-color: rgba(244, 67, 54, 0.1);
-  border-radius: 4px;
-  margin: 20px 0;
-}
-
-/* Responsive adjustments */
 @media (max-width: 768px) {
-  .App-header h1 {
+  .dashboard-grid {
+    gap: 15px;
+  }
+  
+  .app-header h1 {
     font-size: 1.5em;
   }
+  
+  .search-form {
+    flex-direction: column;
+  }
+  
+  .search-button {
+    width: 100%;
+  }
+  
+  .time-interval-controls {
+    gap: 5px;
+  }
+  
+  .time-interval-controls button {
+    padding: 6px 12px;
+    font-size: 0.8em;
+  }
 
-  main {
-    padding: 0 10px;
+  .chart-section {
+    height: 400px;
+  }
+
+  .metrics-section {
+    min-height: 400px;
   }
 }

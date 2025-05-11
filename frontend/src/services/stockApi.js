@@ -18,7 +18,49 @@ const getNextApiKey = () => {
   return key;
 };
 
+const getLocalData = async (functionName, symbol) => {
+  try {
+    const url = `/data/${symbol.toLowerCase()}_${functionName.toLowerCase()}.json`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`No local data available for ${symbol} ${functionName}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.log(`Local data not found for ${symbol} ${functionName}, falling back to API...`);
+    return null;
+  }
+};
+
 const fetchWithApiKey = async (params) => {
+  const functionMatch = params.match(/function=([^&]+)/);
+  const symbolMatch = params.match(/symbol=([^&]+)/);
+  
+  if (!functionMatch || !symbolMatch) {
+    throw new Error('Invalid API parameters');
+  }
+  
+  const functionName = functionMatch[1];
+  const symbol = symbolMatch[1];
+  
+  const functionMap = {
+    'OVERVIEW': 'overview',
+    'EARNINGS': 'earnings',
+    'TIME_SERIES_DAILY': 'timeseries',
+    'TIME_SERIES_INTRADAY': 'intraday'
+  };
+  
+  const localFunctionName = functionMap[functionName];
+  if (!localFunctionName) {
+    throw new Error(`No local data mapping available for function: ${functionName}`);
+  }
+  
+  const localData = await getLocalData(localFunctionName, symbol);
+  if (localData) {
+    return localData;
+  }
+  
   const apiKey = getNextApiKey();
   const response = await fetch(`${BASE_URL}?${params}&apikey=${apiKey}`);
   const data = await response.json();
@@ -33,7 +75,7 @@ const fetchWithApiKey = async (params) => {
     data['Note'].includes('API key') ||
     data['Note'].includes('25 requests per day')
   )) {
-    throw new Error('RATE_LIMIT');
+    throw new Error('API rate limit exceeded. Please try again later.');
   }
 
   return data;
@@ -46,14 +88,13 @@ const fetchWithRetry = async (params) => {
     if (error.message !== 'RATE_LIMIT') {
       throw error;
     }
-    // If we hit rate limit, try with next API key
     return await fetchWithApiKey(params);
   }
 };
 
 export const TIME_SERIES_INTERVALS = {
   '1D': 'TIME_SERIES_INTRADAY',
-  '1W': 'TIME_SERIES_INTRADAY',
+  '1W': 'TIME_SERIES_DAILY',
   '1M': 'TIME_SERIES_DAILY',
   '3M': 'TIME_SERIES_DAILY',
   'YTD': 'TIME_SERIES_DAILY',
@@ -63,31 +104,41 @@ export const TIME_SERIES_INTERVALS = {
 
 export const fetchAllStockData = async (symbol) => {
   try {
-    // Check cache first
     const cacheKey = `all_data_${symbol}`;
     const cachedData = cacheService.get(cacheKey);
     if (cachedData) {
       return cachedData;
     }
 
-    // Check rate limit
     await rateLimiter.checkLimit();
 
-    // Make separate API calls for different data types
-    const [overviewData, earningsData, timeSeriesData] = await Promise.all([
+    const [overviewData, earningsData, timeSeriesData, intradayData] = await Promise.all([
       fetchWithRetry(`function=OVERVIEW&symbol=${symbol}`),
       fetchWithRetry(`function=EARNINGS&symbol=${symbol}`),
-      fetchWithRetry(`function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact`)
+      fetchWithRetry(`function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact`),
+      fetchWithRetry(`function=TIME_SERIES_INTRADAY&symbol=${symbol}&interval=5min&outputsize=compact`)
     ]);
-
-    // Validate responses
+    
     if (!overviewData?.Name) throw new Error('No company overview data available');
     if (!earningsData?.quarterlyEarnings) throw new Error('No earnings data available');
     if (!timeSeriesData?.['Time Series (Daily)']) throw new Error('No historical data available');
+    
+    let processedIntradayData = [];
+    if (intradayData?.['Time Series (5min)']) {
+      const intradaySeries = intradayData['Time Series (5min)'];
+      processedIntradayData = Object.entries(intradaySeries)
+        .map(([date, values]) => ({
+          timestamp: new Date(date).getTime(),
+          price: parseFloat(values['4. close']),
+          volume: parseInt(values['5. volume']),
+          open: parseFloat(values['1. open']),
+          high: parseFloat(values['2. high']),
+          low: parseFloat(values['3. low'])
+        }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+    }
 
     const timeSeries = timeSeriesData['Time Series (Daily)'];
-
-    // Process historical data and get current price info
     const processedHistoricalData = Object.entries(timeSeries)
       .map(([date, values]) => ({
         timestamp: new Date(date).getTime(),
@@ -96,7 +147,6 @@ export const fetchAllStockData = async (symbol) => {
       }))
       .sort((a, b) => a.timestamp - b.timestamp);
 
-    // Get current price info from the most recent data point
     const currentData = processedHistoricalData[processedHistoricalData.length - 1];
     const previousData = processedHistoricalData[processedHistoricalData.length - 2];
     const priceChange = previousData ? currentData.price - previousData.price : 0;
@@ -110,15 +160,7 @@ export const fetchAllStockData = async (symbol) => {
         changePercent: priceChangePercent,
         volume: currentData.volume
       },
-      overview: {
-        name: overviewData.Name,
-        description: overviewData.Description || 'No description available',
-        sector: overviewData.Sector || 'N/A',
-        marketCap: parseFloat(overviewData.MarketCapitalization) || 0,
-        dividendYield: parseFloat(overviewData.DividendYield) || 0,
-        dividendPerShare: parseFloat(overviewData.DividendPerShare) || 0,
-        payoutRatio: parseFloat(overviewData.PayoutRatio) || 0
-      },
+      overview: overviewData,
       earnings: {
         quarterly: earningsData.quarterlyEarnings.map(earning => ({
           date: earning.fiscalDateEnding,
@@ -135,10 +177,10 @@ export const fetchAllStockData = async (symbol) => {
         priceToBookRatio: parseFloat(overviewData.PriceToBookRatio) || 0,
         priceToSalesRatio: parseFloat(overviewData.PriceToSalesRatio) || 0
       },
-      historicalData: processedHistoricalData
+      historicalData: processedHistoricalData,
+      intradayData: processedIntradayData
     };
 
-    // Cache the processed data
     cacheService.set(cacheKey, processedData);
     return processedData;
 
