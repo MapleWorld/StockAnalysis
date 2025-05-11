@@ -1,30 +1,6 @@
 import React, { useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale
-} from 'chart.js';
-import 'chartjs-adapter-date-fns';
-import { enUS } from 'date-fns/locale';
+import ReactApexChart from 'react-apexcharts';
 import './StockChart.css';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale
-);
 
 const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
   const filteredData = useMemo(() => {
@@ -42,8 +18,13 @@ const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
     if (selectedInterval === '1D') {
       if (intradayData && intradayData.length > 0) {
         return intradayData.map(item => ({
-          ...item,
-          timestamp: new Date(item.timestamp).setHours(0, 0, 0, 0) + new Date(item.timestamp).getHours() * 60 * 60 * 1000 + new Date(item.timestamp).getMinutes() * 60 * 1000
+          x: new Date(item.timestamp),
+          y: [
+            item.open || item.price,
+            item.high || item.price,
+            item.low || item.price,
+            item.price
+          ]
         }));
       }
       // If no intraday data, use the last day's data from historical data
@@ -51,8 +32,8 @@ const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
         const diff = now - item.timestamp;
         return diff <= oneDay;
       }).map(item => ({
-        ...item,
-        timestamp: new Date(item.timestamp).setHours(0, 0, 0, 0)
+        x: new Date(item.timestamp),
+        y: [item.price, item.price, item.price, item.price]
       }));
     }
     
@@ -69,135 +50,88 @@ const StockChart = ({ historicalData, intradayData, selectedInterval }) => {
         default: return true;
       }
     }).map(item => ({
-      ...item,
-      timestamp: new Date(item.timestamp).setHours(0, 0, 0, 0)
+      x: new Date(item.timestamp),
+      y: [
+        item.open || item.price,
+        item.high || item.price,
+        item.low || item.price,
+        item.price
+      ]
     }));
   }, [historicalData, intradayData, selectedInterval]);
 
-  const chartData = {
-    datasets: [
-      {
-        label: 'Stock Price',
-        data: filteredData.map(item => ({
-          x: item.timestamp,
-          y: item.price,
-          o: item.open || item.price,
-          h: item.high || item.price,
-          l: item.low || item.price,
-          c: item.price
-        })),
-        borderColor: 'rgb(97, 218, 251)',
-        backgroundColor: 'rgba(97, 218, 251, 0.1)',
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        fill: false,
-        tension: 0
-      }
-    ]
-  };
-
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        display: false
-      },
-      title: {
-        display: true,
-        text: `Stock Price (${selectedInterval})`,
-        color: '#fff',
-        font: {
-          size: 16
+    chart: {
+      type: 'candlestick',
+      height: 400,
+      background: '#282c34',
+      toolbar: {
+        show: true,
+        tools: {
+          download: true,
+          selection: true,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          pan: true,
+          reset: true
         }
-      },
+      }
+    },
+    title: {
+      text: 'Stock Price',
+      align: 'left',
+      style: {
+        color: '#fff'
+      }
+    },
+    xaxis: {
+      type: 'datetime',
+      labels: {
+        style: {
+          colors: '#fff'
+        }
+      }
+    },
+    yaxis: {
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: 'rgba(97, 218, 251, 0.2)',
-        borderWidth: 1,
-        displayColors: false,
-        callbacks: {
-          title: function(context) {
-            const date = new Date(context[0].parsed.x);
-            switch (selectedInterval) {
-              case '1D':
-                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              case '1W':
-                return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-              case '1M':
-              case '3M':
-                return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-              case 'YTD':
-              case '1Y':
-              case '5Y':
-                return date.toLocaleDateString([], { month: 'short', year: '2-digit' });
-              default:
-                return date.toLocaleDateString();
-            }
-          },
-          label: function(context) {
-            const dataPoint = context.raw;
-            return [
-              `Open: $${dataPoint.o.toFixed(2)}`,
-              `High: $${dataPoint.h.toFixed(2)}`,
-              `Low: $${dataPoint.l.toFixed(2)}`,
-              `Close: $${dataPoint.c.toFixed(2)}`
-            ];
-          }
+        enabled: true
+      },
+      labels: {
+        style: {
+          colors: '#fff'
         }
       }
     },
-    scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: selectedInterval === '1D' ? 'minute' : 'day',
-          displayFormats: {
-            minute: 'HH:mm',
-            day: 'MMM d'
-          }
-        },
-        adapters: {
-          date: {
-            locale: enUS
-          }
-        },
-        grid: {
-          display: false
-        },
-        ticks: {
-          color: '#fff',
-          maxRotation: 45,
-          minRotation: 45,
-          maxTicksLimit: selectedInterval === '1D' ? 12 : 8
-        }
-      },
-      y: {
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
-        },
-        ticks: {
-          color: '#fff',
-          callback: function(value) {
-            return '$' + value.toFixed(2);
-          }
+    plotOptions: {
+      candlestick: {
+        colors: {
+          upward: '#4caf50',
+          downward: '#f44336'
         }
       }
+    },
+    tooltip: {
+      theme: 'dark',
+      x: {
+        format: selectedInterval === '1D' ? 'HH:mm' : 'MMM dd, yyyy'
+      }
+    },
+    grid: {
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      strokeDashArray: 4
     }
   };
 
   return (
     <div className="stock-chart">
       <div className="chart-container">
-        <Line data={chartData} options={options} />
+        <ReactApexChart
+          options={options}
+          series={[{ data: filteredData }]}
+          type="candlestick"
+          height={400}
+        />
       </div>
     </div>
   );

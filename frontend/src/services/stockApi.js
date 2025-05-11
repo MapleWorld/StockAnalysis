@@ -143,7 +143,10 @@ export const fetchAllStockData = async (symbol) => {
       .map(([date, values]) => ({
         timestamp: new Date(date).getTime(),
         price: parseFloat(values['4. close']),
-        volume: parseInt(values['6. volume'])
+        volume: parseInt(values['6. volume']),
+        open: parseFloat(values['1. open']),
+        high: parseFloat(values['2. high']),
+        low: parseFloat(values['3. low'])
       }))
       .sort((a, b) => a.timestamp - b.timestamp);
 
